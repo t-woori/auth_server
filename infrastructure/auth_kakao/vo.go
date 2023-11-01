@@ -20,3 +20,14 @@ type KakaoInfoResponse struct {
 	ExpiresIn int `json:"expires_in"`
 	AppId     int `json:"app_id"`
 }
+
+type KakaoUserProfile struct {
+	Id           int    `json:"id"`
+	ConnectedAt  string `json:"connected_at"`
+	KakaoAccount struct {
+		NickName bool `json:"profile_nickname_needs_agreement"`
+	} `json:"kakao_account"`
+	Properties struct {
+		Nickname string `json:"nickname"`
+	} `json:"properties"`
+}

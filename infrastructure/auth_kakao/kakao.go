@@ -4,17 +4,15 @@ import (
 	"encoding/json"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"io"
 	"lambda_list/tools"
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 )
 
 const (
-	AUTH_URL            = "https://kauth.kakao.com/oauth/token"
-	VALIDATE_TOPKEN_URL = "https://kapi.kakao.com/v1/user/access_token_info"
+	AUTH_URL     = "https://kauth.kakao.com/oauth/token"
+	USER_PROFILE = "https://kapi.kakao.com/v2/user/me"
 )
 
 var clientKey = os.Getenv("KAKAO_CLIENT_KEY")
@@ -27,7 +25,7 @@ func GenerateToken(authCode string) (*AuthResponse, error) {
 		return nil, errors.Wrapf(err, "failed to get token from code: %s", authCode)
 	}
 	if rawResponse.StatusCode != http.StatusOK {
-		loggingHttpResponse(rawResponse, err)
+		tools.LoggingHttpResponse(rawResponse, err)
 		return nil, errors.Wrapf(err, "failed to get token from code: %s", authCode)
 	}
 	defer rawResponse.Body.Close()
@@ -41,43 +39,31 @@ func GenerateToken(authCode string) (*AuthResponse, error) {
 	return response, err
 }
 
-func ValidateToken(accessToken string) (*KakaoInfoResponse, error) {
-	request, err := http.NewRequest(http.MethodGet, VALIDATE_TOPKEN_URL, nil)
-	request.Header.Add("Authorization", "Bearer "+accessToken)
-	tools.Logger().Info("request: ", zap.Strings("request header", request.Header.Values("Authorization")),
-		zap.String("url", request.URL.String()),
-		zap.String("method", request.Method))
+func GetUserProfile(accessToken string) (*KakaoUserProfile, error) {
+	request, err := http.NewRequest(http.MethodGet, USER_PROFILE, nil)
 	if err != nil {
+		tools.Logger().Error("failed to create request", zap.Error(err))
 		return nil, errors.Wrap(err, "failed to create request")
 	}
+	request.Header.Add("Authorization", "Bearer "+accessToken)
+	request.Header.Add("Content-type", "application/x-www-form-urlencoded")
 	response, err := requestHttp(request)
-	defer response.Body.Close()
 	if err != nil {
+		tools.Logger().Error("failed to request", zap.Error(err))
 		return nil, errors.Wrap(err, "failed to request")
 	}
+	defer response.Body.Close()
+	tools.LoggingHttpResponse(response, err)
 	if response.StatusCode != http.StatusOK {
-		loggingHttpResponse(response, err)
-		return nil, errors.New("failed to validate token")
+		return nil, errors.New("failed to get user profile")
 	}
-	responseValidateToken := &KakaoInfoResponse{}
-	err = marshalingRawResponse(response, responseValidateToken)
+	userProfile := &KakaoUserProfile{}
+	err = marshalingRawResponse(response, userProfile)
 	if err != nil {
 		tools.Logger().Error("failed to marshaling response", zap.Error(err))
 		return nil, errors.Wrap(err, "failed to marshaling response")
 	}
-	tools.Logger().Info("token_info: ", zap.Any("token_info", responseValidateToken))
-	return responseValidateToken, nil
-}
-
-func loggingHttpResponse(rawResponse *http.Response, err error) {
-	tools.Logger().Error("failed get token",
-		zap.Int("status", rawResponse.StatusCode),
-		zap.Any("header", rawResponse.Header),
-		zap.String("body", func() string {
-			stringBuffer := &strings.Builder{}
-			io.Copy(stringBuffer, rawResponse.Body)
-			return stringBuffer.String()
-		}()), zap.Error(err))
+	return userProfile, nil
 }
 
 func getTokenByKakao(authCode string) (*http.Response, error) {
@@ -104,11 +90,7 @@ func requestHttp(request *http.Request) (*http.Response, error) {
 	return response, nil
 }
 
-func marshalingRawResponse[T AuthResponse | KakaoInfoResponse](response *http.Response, unmarshalValue *T) error {
-	tools.Logger().Info("response kakao: ",
-		zap.Int("status", response.StatusCode),
-		zap.Any("header", response.Header),
-		zap.Any("body", response.Body))
+func marshalingRawResponse[T AuthResponse | KakaoUserProfile | KakaoInfoResponse](response *http.Response, unmarshalValue *T) error {
 	err := json.NewDecoder(response.Body).Decode(&unmarshalValue)
 	if err != nil {
 		return errors.Wrapf(err, "failed to unmarshal response: %s", response.Body)

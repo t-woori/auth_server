@@ -13,13 +13,16 @@ func RegisterStudent(authCode string) (*Student, error) {
 		return nil, err
 	}
 	tools.Logger().Info("token info: ", zap.Any("token", tokenInfo))
-	validatedInfo, err := infrastructure.ValidateToken(tokenInfo.AccessToken)
+	profile, err := infrastructure.GetUserProfile(tokenInfo.AccessToken)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to validate token")
+		return nil, errors.Wrap(err, "failed to get user profile")
 	}
-	tools.Logger().Info("validated user", zap.Int("kakaoId", validatedInfo.KakaoId))
+	tools.Logger().Info("validated user", zap.Int("kakaoId", profile.Id),
+		zap.Bool("needs", profile.KakaoAccount.NickName),
+		zap.String("nickname", profile.Properties.Nickname))
 	return &Student{
 		StudentId:    "id",
+		Nickname:     profile.Properties.Nickname,
 		AccessToken:  tokenInfo.AccessToken,
 		RefreshToken: tokenInfo.RefreshToken,
 	}, nil

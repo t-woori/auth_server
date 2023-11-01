@@ -4,4 +4,5 @@ type Student struct {
 	StudentId    string
 	AccessToken  string
 	RefreshToken string
+	Nickname     string
 }
