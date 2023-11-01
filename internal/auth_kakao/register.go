@@ -18,8 +18,11 @@ func RegisterStudent(authCode string) (*Student, error) {
 		return nil, errors.Wrap(err, "failed to get user profile")
 	}
 	tools.Logger().Info("validated user", zap.Int("kakaoId", profile.Id),
-		zap.Bool("needs", profile.KakaoAccount.NickName),
+		zap.Bool("needs", profile.KakaoAccount.NotAccessNickName),
 		zap.String("nickname", profile.Properties.Nickname))
+	if profile.KakaoAccount.NotAccessNickName {
+		return nil, errors.New("failed to get nickname")
+	}
 	return &Student{
 		StudentId:    "id",
 		Nickname:     profile.Properties.Nickname,

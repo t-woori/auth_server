@@ -14,8 +14,3 @@ type StudentResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
-
-type ErrorResponse struct {
-	Response
-	Error string `json:"error"`
-}

@@ -1,4 +1,4 @@
-package infrastructure
+package auth_kakao
 
 type AuthRequest struct {
 	ClientId    string `json:"client_id"`
@@ -25,7 +25,7 @@ type KakaoUserProfile struct {
 	Id           int    `json:"id"`
 	ConnectedAt  string `json:"connected_at"`
 	KakaoAccount struct {
-		NickName bool `json:"profile_nickname_needs_agreement"`
+		NotAccessNickName bool `json:"profile_nickname_needs_agreement"`
 	} `json:"kakao_account"`
 	Properties struct {
 		Nickname string `json:"nickname"`

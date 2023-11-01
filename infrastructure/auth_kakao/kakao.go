@@ -1,4 +1,4 @@
-package infrastructure
+package auth_kakao
 
 import (
 	"encoding/json"
@@ -66,7 +66,7 @@ func GetUserProfile(accessToken string) (*KakaoUserProfile, error) {
 	defer response.Body.Close()
 	tools.LoggingHttpResponse(response, err)
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.New("failed to get user profile")
+		return nil, ErrFailedToGetToken
 	}
 	userProfile := &KakaoUserProfile{}
 	err = marshalingRawResponse(response, userProfile)
