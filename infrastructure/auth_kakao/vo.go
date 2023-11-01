@@ -12,9 +12,11 @@ type AuthResponse struct {
 	ExpiresIn             int    `json:"expires_in"`
 	RefreshToken          string `json:"refresh_token"`
 	RefreshTokenExpiresIn int    `json:"refresh_token_expires_in"`
+	Scope                 string `json:"scope"`
 }
 
-type ErrorResponse struct {
-	ErrorCode        string `json:"error"`
-	ErrorDescription string `json:"error_description"`
+type KakaoInfoResponse struct {
+	KakaoId   int `json:"id"`
+	ExpiresIn int `json:"expires_in"`
+	AppId     int `json:"app_id"`
 }
