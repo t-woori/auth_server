@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
 
 const (
@@ -19,7 +20,17 @@ var clientKey = os.Getenv("KAKAO_CLIENT_KEY")
 var redirectUri = os.Getenv("KAKAO_REDIRECT_URI")
 
 func GenerateToken(authCode string) (*AuthResponse, error) {
-	rawResponse, err := getTokenByKakao(authCode)
+	request, err := http.NewRequest(http.MethodPost, AUTH_URL, strings.NewReader(url.Values{
+		"client_id":    {clientKey},
+		"redirect_uri": {redirectUri},
+		"code":         {authCode},
+		"grant_type":   {"authorization_code"},
+	}.Encode()))
+	request.Header.Add("Content-type", "application/x-www-form-urlencoded")
+	rawResponse, err := requestHttp(request)
+	if err != nil {
+		return nil, err
+	}
 	if err != nil {
 		tools.Logger().Error("failed to get token. caused by", zap.Error(err))
 		return nil, errors.Wrapf(err, "failed to get token from code: %s", authCode)
@@ -64,21 +75,6 @@ func GetUserProfile(accessToken string) (*KakaoUserProfile, error) {
 		return nil, errors.Wrap(err, "failed to marshaling response")
 	}
 	return userProfile, nil
-}
-
-func getTokenByKakao(authCode string) (*http.Response, error) {
-	rawResponse, err := http.PostForm(AUTH_URL, url.Values{
-		"client_id":    {clientKey},
-		"redirect_uri": {redirectUri},
-		"code":         {authCode},
-		"grant_type":   {"authorization_code"},
-	})
-
-	if err != nil {
-		tools.Logger().Error("failed to get token from code", zap.Error(err))
-		return nil, errors.Wrapf(err, "failed to get token from code: %s", authCode)
-	}
-	return rawResponse, nil
 }
 
 func requestHttp(request *http.Request) (*http.Response, error) {
