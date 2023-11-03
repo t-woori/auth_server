@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	infrastructure "lambda_list/infrastructure/auth_kakao"
+	"lambda_list/infrastructure/auth_kakao/db"
 	"lambda_list/tools"
 )
 
@@ -23,10 +24,27 @@ func RegisterStudent(authCode string) (*Student, error) {
 	if profile.KakaoAccount.NotAccessNickName {
 		return nil, errors.New("failed to get nickname")
 	}
+	studentDao, err := saveStudent(err, profile, tokenInfo)
+	if err != nil {
+		return nil, err
+	}
 	return &Student{
-		StudentId:    "id",
-		Nickname:     profile.Properties.Nickname,
+		StudentId:    studentDao.StudentId,
+		Nickname:     studentDao.NickName,
 		AccessToken:  tokenInfo.AccessToken,
 		RefreshToken: tokenInfo.RefreshToken,
 	}, nil
+}
+
+func saveStudent(err error, profile *infrastructure.KakaoUserProfile, tokenInfo *infrastructure.AuthResponse) (*db.Student, error) {
+	studentDao, err := db.FindByKakaoId(profile.Id)
+	studentDao.RefreshToken = tokenInfo.RefreshToken
+	studentDao.AccessToken = tokenInfo.AccessToken
+	studentDao.NickName = profile.Properties.Nickname
+	studentDao.KakaoId = profile.Id
+	err = db.SaveUser(studentDao)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to save user")
+	}
+	return studentDao, nil
 }
