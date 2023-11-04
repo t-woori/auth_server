@@ -48,15 +48,17 @@ func SaveUser(studentDao *Student) error {
 	}
 	defer db.Close()
 	if studentDao.StudentId != uuid.Nil {
-		tools.Logger().Info("updated student", zap.Any("student", studentDao))
+		rawUUID, err := studentDao.StudentId.MarshalBinary()
+		tools.Logger().Info("updated student", zap.Int("kakaoId", studentDao.KakaoId), zap.String("student name", studentDao.NickName))
 		_, err = db.Exec("UPDATE students SET access_token = ?, refresh_token = ?, updated_at=now() WHERE student_id = ? ",
-			studentDao.AccessToken, studentDao.RefreshToken, studentDao.StudentId)
+			studentDao.AccessToken, studentDao.RefreshToken, rawUUID)
 		return err
 	}
 	studentDao.StudentId = uuid.New()
-	tools.Logger().Info("inserted student", zap.Any("student", studentDao))
+	rawUUID, err := studentDao.StudentId.MarshalBinary()
+	tools.Logger().Info("insert student", zap.Int("kakaoId", studentDao.KakaoId), zap.String("student name", studentDao.NickName))
 	_, err = db.Exec("INSERT INTO students (kakao_id, nickname, student_id, access_token, refresh_token,created_at,updated_at) VALUES (?, ?, ?, ?, ?,now(),now())",
-		studentDao.KakaoId, studentDao.NickName, studentDao.StudentId, studentDao.AccessToken, studentDao.RefreshToken)
+		studentDao.KakaoId, studentDao.NickName, rawUUID, studentDao.AccessToken, studentDao.RefreshToken)
 	return err
 }
 
