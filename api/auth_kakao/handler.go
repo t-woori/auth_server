@@ -14,7 +14,15 @@ import (
 
 func HandlerAuthKakao(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	kakaoTokens := AuthKakaoRequestBody{}
-	json.Unmarshal([]byte(event.Body), &kakaoTokens)
+	err := json.Unmarshal([]byte(event.Body), &kakaoTokens)
+	if err != nil {
+		tools.Logger().Fatal("failed to unmarshal", zap.Any("request", event), zap.Error(errors.Cause(err)))
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusBadRequest,
+			Body:       "not found token",
+		}, nil
+	}
+	tools.Logger().Info("kakao tokens", zap.Any("tokens", kakaoTokens))
 	res, err := auth_kakao.RegisterStudent(auth_kakao.KakaoTokens{
 		AccessToken:  kakaoTokens.AccessToken,
 		RefreshToken: kakaoTokens.RefreshToken})
