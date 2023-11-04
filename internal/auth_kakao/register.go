@@ -9,13 +9,8 @@ import (
 	"lambda_list/tools"
 )
 
-func RegisterStudent(authCode string) (*Student, error) {
-	tokenInfo, err := infrastructure.GenerateToken(authCode)
-	if err != nil {
-		return nil, err
-	}
-	tools.Logger().Info("token info: ", zap.Any("token", tokenInfo))
-	profile, err := infrastructure.GetUserProfile(tokenInfo.AccessToken)
+func RegisterStudent(kakaoTokens KakaoTokens) (*Student, error) {
+	profile, err := infrastructure.GetUserProfile(kakaoTokens.AccessToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get user profile")
 	}
@@ -25,7 +20,7 @@ func RegisterStudent(authCode string) (*Student, error) {
 	if profile.KakaoAccount.NotAccessNickName {
 		return nil, errors.New("failed to get nickname")
 	}
-	studentDao, err := saveStudent(err, profile, tokenInfo)
+	studentDao, err := saveStudent(err, profile, kakaoTokens)
 	if err != nil {
 		return nil, err
 	}
@@ -46,10 +41,10 @@ func RegisterStudent(authCode string) (*Student, error) {
 	}, nil
 }
 
-func saveStudent(err error, profile *infrastructure.KakaoUserProfile, tokenInfo *infrastructure.AuthResponse) (*db.Student, error) {
+func saveStudent(err error, profile *infrastructure.KakaoUserProfile, tokens KakaoTokens) (*db.Student, error) {
 	studentDao, err := db.FindByKakaoId(profile.Id)
-	studentDao.RefreshToken = tokenInfo.RefreshToken
-	studentDao.AccessToken = tokenInfo.AccessToken
+	studentDao.RefreshToken = tokens.RefreshToken
+	studentDao.AccessToken = tokens.AccessToken
 	studentDao.NickName = profile.Properties.Nickname
 	studentDao.KakaoId = profile.Id
 	err = db.SaveUser(studentDao)

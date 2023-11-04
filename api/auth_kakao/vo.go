@@ -14,3 +14,8 @@ type StudentResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
+
+type AuthKakaoRequestBody struct {
+	AccessToken  string `json:"kakao_access_token"`
+	RefreshToken string `json:"kakao_refresh_token"`
+}
