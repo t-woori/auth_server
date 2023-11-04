@@ -1,4 +1,4 @@
-package db
+package auth_kakao
 
 import "github.com/google/uuid"
 
