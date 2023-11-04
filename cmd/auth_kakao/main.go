@@ -1,7 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"github.com/aws/aws-lambda-go/lambda"
+	"lambda_list/api/auth_kakao"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	lambda.Start(auth_kakao.HandlerAuthKakao)
 }

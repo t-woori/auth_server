@@ -1,0 +1,28 @@
+FROM golang:1.20 as build
+
+WORKDIR /build
+
+COPY go.mod go.sum ./
+
+COPY cmd/auth_kakao/main.go .
+COPY api/ api/
+COPY tools/ tools/
+COPY infrastructure/auth_kakao infrastructure/auth_kakao
+COPY internal/ internal/
+
+ARG CGO_ENABLED=0
+
+RUN go mod tidy && go build -tags lambda.norpc -o main main.go
+
+FROM public.ecr.aws/lambda/provided:al2
+
+ENV KAKAO_CLIENT_KEY=${KAKAO_CLIENT_KEY}
+ENV KAKAO_REDIRECT_URI=${KAKAO_REDIRECT_URI}
+ENV RDS_PROXY_HOST=${RDS_PROXY_HOST}
+ENV AWS_SECRET_NAME=${AWS_SECRET_NAME}
+ENV AWS_REGION=${AWS_REGION}
+ENV ACCESS_SECRET=${ACCESS_SECRET}
+ENV REFRESH_SECRET=${REFRESH_SECRET}
+
+COPY --from=build /build/main ./main
+ENTRYPOINT [ "./main" ]
