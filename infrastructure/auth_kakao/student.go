@@ -14,16 +14,15 @@ func FindByKakaoId(kakaoId int) (*Student, error) {
 	}
 	defer dbConnection.Close()
 	tools.Logger().Info("search student", zap.Int("kakaoId", kakaoId))
-	dao := Student{}
+	studentDao := Student{}
 	err = dbConnection.QueryRow("SELECT kakao_id, nickname, student_id, access_token,refresh_token FROM students WHERE kakao_id = ?", kakaoId).Scan(
-		&dao.KakaoId, &dao.NickName, &dao.StudentId, &dao.AccessToken, &dao.RefreshToken)
-	tools.Logger().Info("found student", zap.Any("student", dao), zap.Error(err))
+		&studentDao.KakaoId, &studentDao.NickName, &studentDao.StudentId, &studentDao.AccessToken, &studentDao.RefreshToken)
 	if err != nil {
 		tools.Logger().Error("failed to find student", zap.Error(err))
 		return &Student{}, err
 	}
-	tools.Logger().Info("found student", zap.Any("student", dao))
-	return &dao, nil
+	tools.Logger().Info("found student", zap.Int("kakaoId", studentDao.KakaoId), zap.String("student name", studentDao.NickName))
+	return &studentDao, nil
 }
 
 func SaveUser(studentDao *Student) error {
