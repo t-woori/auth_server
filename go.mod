@@ -24,5 +24,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.19.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.25.0 // indirect
 	github.com/aws/smithy-go v1.16.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 )
