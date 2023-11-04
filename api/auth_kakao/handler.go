@@ -13,8 +13,19 @@ import (
 )
 
 func HandlerAuthKakao(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	tools.Logger().Info("events: ", zap.Any("events", event))
-	res, err := auth_kakao.RegisterStudent(event.QueryStringParameters["code"])
+	kakaoTokens := AuthKakaoRequestBody{}
+	err := json.Unmarshal([]byte(event.Body), &kakaoTokens)
+	if err != nil {
+		tools.Logger().Fatal("failed to unmarshal", zap.Any("request", event), zap.Error(errors.Cause(err)))
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusBadRequest,
+			Body:       "not found token",
+		}, nil
+	}
+	tools.Logger().Info("kakao tokens", zap.Any("tokens", kakaoTokens))
+	res, err := auth_kakao.RegisterStudent(auth_kakao.KakaoTokens{
+		AccessToken:  kakaoTokens.AccessToken,
+		RefreshToken: kakaoTokens.RefreshToken})
 	if err != nil {
 		tools.Logger().Error("failed to registered student", zap.Error(errors.Cause(err)))
 		if errors.Is(err, customErrors.ErrFailedToGetToken) {

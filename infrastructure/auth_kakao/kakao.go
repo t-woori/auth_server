@@ -6,9 +6,7 @@ import (
 	"go.uber.org/zap"
 	"lambda_list/tools"
 	"net/http"
-	"net/url"
 	"os"
-	"strings"
 )
 
 const (
@@ -18,37 +16,6 @@ const (
 
 var clientKey = os.Getenv("KAKAO_CLIENT_KEY")
 var redirectUri = os.Getenv("KAKAO_REDIRECT_URI")
-
-func GenerateToken(authCode string) (*AuthResponse, error) {
-	request, err := http.NewRequest(http.MethodPost, AUTH_URL, strings.NewReader(url.Values{
-		"client_id":    {clientKey},
-		"redirect_uri": {redirectUri},
-		"code":         {authCode},
-		"grant_type":   {"authorization_code"},
-	}.Encode()))
-	request.Header.Add("Content-type", "application/x-www-form-urlencoded")
-	rawResponse, err := requestHttp(request)
-	if err != nil {
-		return nil, err
-	}
-	if err != nil {
-		tools.Logger().Error("failed to get token. caused by", zap.Error(err))
-		return nil, errors.Wrapf(err, "failed to get token from code: %s", authCode)
-	}
-	if rawResponse.StatusCode != http.StatusOK {
-		tools.LoggingHttpResponse(rawResponse, err)
-		return nil, errors.Wrapf(err, "failed to get token from code: %s", authCode)
-	}
-	defer rawResponse.Body.Close()
-	response := &AuthResponse{}
-	err = marshalingRawResponse(rawResponse, response)
-	if err != nil {
-		tools.Logger().Error("failed to marshaling response", zap.Error(err))
-		return nil, err
-	}
-	tools.Logger().Info("access token: ", zap.Any("token", response.AccessToken))
-	return response, err
-}
 
 func GetUserProfile(accessToken string) (*KakaoUserProfile, error) {
 	request, err := http.NewRequest(http.MethodGet, USER_PROFILE, nil)
@@ -86,7 +53,7 @@ func requestHttp(request *http.Request) (*http.Response, error) {
 	return response, nil
 }
 
-func marshalingRawResponse[T AuthResponse | KakaoUserProfile | KakaoInfoResponse](response *http.Response, unmarshalValue *T) error {
+func marshalingRawResponse[T KakaoUserProfile | KakaoInfoResponse](response *http.Response, unmarshalValue *T) error {
 	err := json.NewDecoder(response.Body).Decode(&unmarshalValue)
 	if err != nil {
 		return errors.Wrapf(err, "failed to unmarshal response: %s", response.Body)

@@ -5,10 +5,12 @@ WORKDIR /build
 COPY go.mod go.sum ./
 
 COPY cmd/auth_kakao/main.go .
-COPY api/ api/
+COPY api/auth_kakao api/auth_kakao
 COPY tools/ tools/
 COPY infrastructure/auth_kakao infrastructure/auth_kakao
+COPY infrastructure/db/rdb.go infrastructure/db/rdb.go
 COPY internal/ internal/
+
 
 ARG CGO_ENABLED=0
 

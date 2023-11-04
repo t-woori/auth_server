@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"lambda_list/tools"
@@ -22,47 +21,7 @@ type _RdsSecrets struct {
 	Port     int    `json:"port"`
 }
 
-func FindByKakaoId(kakaoId int) (*Student, error) {
-	db, err := connectRDB()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-	tools.Logger().Info("search student", zap.Int("kakaoId", kakaoId))
-	dao := Student{}
-	err = db.QueryRow("SELECT kakao_id, nickname, student_id, access_token,refresh_token FROM students WHERE kakao_id = ?", kakaoId).Scan(
-		&dao.KakaoId, &dao.NickName, &dao.StudentId, &dao.AccessToken, &dao.RefreshToken)
-	tools.Logger().Info("found student", zap.Any("student", dao), zap.Error(err))
-	if err != nil {
-		tools.Logger().Error("failed to find student", zap.Error(err))
-		return &Student{}, err
-	}
-	tools.Logger().Info("found student", zap.Any("student", dao))
-	return &dao, nil
-}
-
-func SaveUser(studentDao *Student) error {
-	db, err := connectRDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	if studentDao.StudentId != uuid.Nil {
-		rawUUID, err := studentDao.StudentId.MarshalBinary()
-		tools.Logger().Info("updated student", zap.Int("kakaoId", studentDao.KakaoId), zap.String("student name", studentDao.NickName))
-		_, err = db.Exec("UPDATE students SET access_token = ?, refresh_token = ?, updated_at=now() WHERE student_id = ? ",
-			studentDao.AccessToken, studentDao.RefreshToken, rawUUID)
-		return err
-	}
-	studentDao.StudentId = uuid.New()
-	rawUUID, err := studentDao.StudentId.MarshalBinary()
-	tools.Logger().Info("insert student", zap.Int("kakaoId", studentDao.KakaoId), zap.String("student name", studentDao.NickName))
-	_, err = db.Exec("INSERT INTO students (kakao_id, nickname, student_id, access_token, refresh_token,created_at,updated_at) VALUES (?, ?, ?, ?, ?,now(),now())",
-		studentDao.KakaoId, studentDao.NickName, rawUUID, studentDao.AccessToken, studentDao.RefreshToken)
-	return err
-}
-
-func connectRDB() (*sql.DB, error) {
+func ConnectRDB() (*sql.DB, error) {
 	dbURL, err := getDbURL()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get db url")
