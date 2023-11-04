@@ -5,6 +5,7 @@ import (
 	"go.uber.org/zap"
 	infrastructure "lambda_list/infrastructure/auth_kakao"
 	"lambda_list/infrastructure/auth_kakao/db"
+	"lambda_list/internal/auth_user"
 	"lambda_list/tools"
 )
 
@@ -28,11 +29,20 @@ func RegisterStudent(authCode string) (*Student, error) {
 	if err != nil {
 		return nil, err
 	}
+	accessToken, err := auth_user.CreateAccessToken(studentDao.StudentId)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create access token")
+	}
+	refreshToken, err := auth_user.CreateRefreshToken(studentDao.StudentId)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create refresh token")
+	}
+
 	return &Student{
 		StudentId:    studentDao.StudentId,
 		Nickname:     studentDao.NickName,
-		AccessToken:  tokenInfo.AccessToken,
-		RefreshToken: tokenInfo.RefreshToken,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 	}, nil
 }
 
