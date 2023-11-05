@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type accessTokenClaims struct {
+type customTokenClaim struct {
 	Id uuid.UUID `json:"id"`
 	jwt.StandardClaims
 }
@@ -26,28 +26,20 @@ func ValidateAccessToken(rawAccessToken string) (uuid.UUID, error) {
 	if err != nil {
 		return uuid.Nil, errors.Wrap(err, "fail set timezone")
 	}
-	claim := accessTokenClaims{}
-	_, err = jwt.ParseWithClaims(rawAccessToken, &claim, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			tools.Logger().Error("unexpected signing method", zap.String("method", token.Header["alg"].(string)))
-			return nil, errors.New("unexpected signing method")
-		}
-		if ok := token.Claims.Valid(); ok != nil {
-			return nil, errors.New("invalid claims")
-		}
-		return []byte(secret.AccessTokenSecret), nil
-	})
+	return validateToken(rawAccessToken, secret.AccessTokenSecret)
+}
+
+func ValidateRefreshToken(rawRefreshToken string) (uuid.UUID, error) {
+	secret := tools.CustomTokenSecrets{}
+	err := tools.SetSecretsAboutAWS(&secret, os.Getenv("AWS_TOKEN_SECRET_NAME"))
 	if err != nil {
-		tools.Logger().Error("fail parse access token", zap.Error(err))
-		return uuid.Nil, errors.Wrap(err, "fail parse access token")
+		return uuid.Nil, errors.New("ACCESS_SECRET is not set")
 	}
-	dbStudentId, err := auth_user.FindByStudentId(claim.Id)
+	err = setTz("Asia/Seoul")
 	if err != nil {
-		tools.Logger().Info("not found student", zap.String("stuent_id", claim.Id.String()), zap.Error(err))
-		return uuid.Nil, err
+		return uuid.Nil, errors.Wrap(err, "fail set timezone")
 	}
-	tools.Logger().Info("found student", zap.String("student_id", dbStudentId.String()))
-	return dbStudentId, nil
+	return validateToken(rawRefreshToken, secret.RefreshTokenSecret)
 }
 
 func CreateAccessAndRefreshToken(id uuid.UUID) (string, string, error) {
@@ -60,16 +52,42 @@ func CreateAccessAndRefreshToken(id uuid.UUID) (string, string, error) {
 	if err != nil {
 		return "", "", errors.Wrap(err, "fail set timezone")
 	}
-	acessToken, err := createAccessToken(id, secret.AccessTokenSecret)
+	rawAccessToken, err := createAccessToken(id, secret.AccessTokenSecret)
 	if err != nil {
 		return "", "", errors.Wrap(err, "fail create access token")
 	}
-	refreshToken, err := createRefreshToken(id, secret.RefreshTokenSecret)
-	return acessToken, refreshToken, err
+	rawRefreshToken, err := createRefreshToken(id, secret.RefreshTokenSecret)
+	return rawAccessToken, rawRefreshToken, err
+}
+
+func validateToken(rawToken string, secret string) (uuid.UUID, error) {
+	claim := customTokenClaim{}
+	_, err := jwt.ParseWithClaims(rawToken, &claim, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			tools.Logger().Error("unexpected signing method", zap.String("method", token.Header["alg"].(string)))
+			return nil, errors.New("unexpected signing method")
+		}
+		if ok := token.Claims.Valid(); ok != nil {
+			return nil, errors.New("invalid claims")
+		}
+		return []byte(secret), nil
+	})
+	if err != nil {
+		tools.Logger().Error("fail parse access token", zap.Error(err))
+		return uuid.Nil, errors.Wrap(err, "fail parse access token")
+	}
+	dbStudentId, err := auth_user.FindByStudentId(claim.Id)
+	if err != nil {
+		tools.Logger().Info("not found student", zap.String("stuent_id", claim.Id.String()), zap.Error(err))
+		return uuid.Nil, err
+	}
+	tools.Logger().Info("found student", zap.String("student_id", dbStudentId.String()))
+	return dbStudentId, nil
+
 }
 
 func createAccessToken(id uuid.UUID, secret string) (string, error) {
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS512, accessTokenClaims{
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS512, customTokenClaim{
 		Id: id,
 		StandardClaims: jwt.StandardClaims{
 			IssuedAt:  time.Now().Unix(),
@@ -88,10 +106,12 @@ func createAccessToken(id uuid.UUID, secret string) (string, error) {
 }
 
 func createRefreshToken(id uuid.UUID, secret string) (string, error) {
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
-		"id":  id,
-		"exp": time.Now().Add(24 * time.Hour).Unix()})
-	// Create a new token with the claims
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS512, customTokenClaim{
+		Id: id,
+		StandardClaims: jwt.StandardClaims{
+			IssuedAt:  time.Now().Unix(),
+			NotBefore: time.Now().Add(1 * time.Millisecond).Unix(),
+			ExpiresAt: time.Now().Add(24 * time.Hour).Unix()}})
 	tokenString, err := claims.SignedString([]byte(secret))
 	if err != nil {
 		tools.Logger().Error("fail signed refresh token", zap.Error(err))
