@@ -8,8 +8,10 @@ COPY cmd/auth_kakao/main.go .
 COPY api/auth_kakao api/auth_kakao
 COPY tools/ tools/
 COPY infrastructure/auth_kakao infrastructure/auth_kakao
+COPY infrastructure/auth_user infrastructure/auth_user
 COPY infrastructure/db/rdb.go infrastructure/db/rdb.go
-COPY internal/ internal/
+COPY internal/auth_kakao internal/auth_kakao
+COPY internal/auth_user internal/auth_user
 
 
 ARG CGO_ENABLED=0
@@ -21,10 +23,9 @@ FROM public.ecr.aws/lambda/provided:al2
 ENV KAKAO_CLIENT_KEY=${KAKAO_CLIENT_KEY}
 ENV KAKAO_REDIRECT_URI=${KAKAO_REDIRECT_URI}
 ENV RDS_PROXY_HOST=${RDS_PROXY_HOST}
-ENV AWS_SECRET_NAME=${AWS_SECRET_NAME}
+ENV AWS_RDS_SECRET_NAME=${AWS_RDS_SECRET_NAME}
+ENV AWS_TOKEN_SECRET_NAME=${AWS_TOKEN_SECRET_NAME}
 ENV AWS_REGION=${AWS_REGION}
-ENV ACCESS_SECRET=${ACCESS_SECRET}
-ENV REFRESH_SECRET=${REFRESH_SECRET}
 
 COPY --from=build /build/main ./main
 ENTRYPOINT [ "./main" ]
