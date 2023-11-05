@@ -23,15 +23,7 @@ func RegisterStudent(kakaoTokens KakaoTokens) (*Student, error) {
 	if err != nil {
 		return nil, err
 	}
-	accessToken, err := auth_user.CreateAccessToken(studentDao.StudentId)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create access token")
-	}
-	refreshToken, err := auth_user.CreateRefreshToken(studentDao.StudentId)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create refresh token")
-	}
-
+	accessToken, refreshToken, err := auth_user.CreateAccessAndRefreshToken(studentDao.StudentId)
 	return &Student{
 		StudentId:    studentDao.StudentId,
 		Nickname:     studentDao.NickName,
