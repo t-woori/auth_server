@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.22.0
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.23.0
 	github.com/go-sql-driver/mysql v1.7.1
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.4.0
 	github.com/pkg/errors v0.9.1
 	go.uber.org/zap v1.26.0
@@ -24,6 +25,5 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.19.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.25.0 // indirect
 	github.com/aws/smithy-go v1.16.0 // indirect
-	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 )
