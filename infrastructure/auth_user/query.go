@@ -17,7 +17,7 @@ func FindByStudentId(studentId uuid.UUID) (uuid.UUID, error) {
 	if err != nil {
 		return uuid.Nil, errors.Wrap(err, "fail marshal student id")
 	}
-	err = conn.QueryRow("SELECT student_id FROM students WHERE student_id = ?", rawStudentId).Scan(&dbStudentId)
+	err = conn.QueryRow("SELECT id FROM student WHERE id = ?", rawStudentId).Scan(&dbStudentId)
 	if err != nil || dbStudentId == uuid.Nil {
 		return uuid.Nil, errors.Wrap(err, "fail find student id")
 	}
