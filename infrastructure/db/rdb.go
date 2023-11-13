@@ -20,6 +20,7 @@ func ConnectRDB() (*sql.DB, error) {
 		tools.Logger().Error("fail connect db", zap.Error(err))
 		return nil, err
 	}
+	db.SetMaxIdleConns(0)
 	return db, nil
 }
 
