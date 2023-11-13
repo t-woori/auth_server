@@ -15,7 +15,7 @@ func FindByKakaoId(kakaoId int) (*Student, error) {
 	defer dbConnection.Close()
 	tools.Logger().Info("search student", zap.Int("kakaoId", kakaoId))
 	studentDao := Student{}
-	err = dbConnection.QueryRow("SELECT kakao_id, nickname, student_id, access_token,refresh_token FROM student WHERE kakao_id = ?", kakaoId).Scan(
+	err = dbConnection.QueryRow("SELECT kakao_id, nickname, id, access_token,refresh_token FROM student WHERE kakao_id = ?", kakaoId).Scan(
 		&studentDao.KakaoId, &studentDao.NickName, &studentDao.StudentId, &studentDao.AccessToken, &studentDao.RefreshToken)
 	if err != nil {
 		tools.Logger().Error("failed to find student", zap.Error(err))
